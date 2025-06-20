@@ -219,4 +219,69 @@ const closeModal = () => {
 window.addEventListener('load', () => {
     const modal = getElement('FullReportModel');
     window.addEventListener('click', e => e.target === modal && closeModal());
+
+    const submitBtn = getElement('submitFeedback');
+    const feedbackInput = getElement('feedbackInput');
+    const feedbackMessage = getElement('feedbackMessage');
+
+    submitBtn.addEventListener('click', async () => {
+        const feedback = feedbackInput.value.trim();
+        if (!feedback) {
+            feedbackMessage.style.display = 'block';
+            feedbackMessage.style.color = 'var(--danger)';
+            feedbackMessage.textContent = 'Please enter your feedback before submitting.';
+            return;
+        }
+        try {
+            const response = await fetch('http://localhost:3001/feedback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ feedback })
+            });
+            if (!response.ok) {
+                throw new Error('Failed to submit feedback');
+            }
+            feedbackMessage.style.display = 'block';
+            feedbackMessage.style.color = 'var(--success)';
+            feedbackMessage.textContent = 'Thank you for your feedback!';
+            feedbackInput.value = '';
+            // Refresh feedback list after successful submission
+            loadFeedbackList();
+        } catch (error) {
+            feedbackMessage.style.display = 'block';
+            feedbackMessage.style.color = 'var(--danger)';
+            feedbackMessage.textContent = 'Error submitting feedback. Please try again later.';
+        }
+    });
+
+    // Function to load and display feedback list
+    async function loadFeedbackList() {
+        const feedbackList = getElement('feedbackList');
+        try {
+            const response = await fetch('http://localhost:3001/feedback');
+            if (!response.ok) {
+                throw new Error('Failed to fetch feedback list');
+            }
+            const data = await response.json();
+            feedbackList.innerHTML = '';
+            if (data.feedbacks && data.feedbacks.length > 0) {
+                data.feedbacks.forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = item;
+                    feedbackList.appendChild(li);
+                });
+            } else {
+                feedbackList.innerHTML = '<li>No feedback available.</li>';
+            }
+        } catch (error) {
+            feedbackList.innerHTML = '<li>Error loading feedback list.</li>';
+        }
+    }
+
+    // Load feedback list on page load
+    window.addEventListener('load', () => {
+        loadFeedbackList();
+    });
 });

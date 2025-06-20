@@ -1,0 +1,28 @@
+{
+  "name": "rituraj_projects",
+  "version": "1.0.0",
+  "description": "A web-based application for scanning URLs and files using the [VirusTotal API](https://www.virustotal.com/). This tool allows users to check the safety of URLs and files by analyzing them against VirusTotal's extensive database of antivirus engines and threat intelligence.",
+  "main": "script.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/riturajkumar2002/safe-scan-VT.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/riturajkumar2002/safe-scan-VT/issues"
+  },
+  "homepage": "https://github.com/riturajkumar2002/safe-scan-VT#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0"
+  }
+}

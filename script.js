@@ -1,99 +1,95 @@
-const API_KEY = "482c8d34d486b60b7bd794f82b2cba7b523c532c2583b37732a5053f0a3d9513";
-
 const getElement = id => document.getElementById(id);
+
 const updateResult = (content, display = true) => {
     const result = getElement('result');
     result.style.display = display ? 'block' : 'none';
     result.innerHTML = content;
 };
-const showLoading = message => updateResult(`
-    <div class="loading">
-        <p>${message}</p>
-        <div class="spinner"></div>
-    </div>
-`);
 
-const showError = message => updateResult(`<p class="error">${message}</p>`);
+const showLoading = message => updateResult(
+    '<div class="loading">' +
+        '<p>' + message + '</p>' +
+        '<div class="spinner"></div>' +
+    '</div>'
+);
 
-async function makeRequest(url, options = {}) {
-    const response = await fetch(url, {
-        ...options,
-        headers: {
-            "x-apikey": API_KEY,
-            ...options.headers
-        }
-    });
-    if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: { message: response.statusText } }));
-        throw new Error(error.error?.message || 'Request failed!');
-    }
-    return response.json();
-}
+const showError = message => updateResult('<p class="error">' + message + '</p>');
 
 async function scanURL() {
-    const url = getElement("urlInput").value.trim();
-    if (!url) return showError("Please enter a URL");
+    const urlInput = getElement("urlInput");
+    const url = urlInput.value.trim();
+    if (!url) {
+        showError("Please enter a URL");
+        return;
+    }
 
     try {
         new URL(url);
     } catch {
-        return showError("Please enter a valid URL, e.g., https://example.com");
+        showError("Please enter a valid URL, e.g., https://example.com");
+        return;
     }
 
     try {
         showLoading("Submitting URL for scanning...");
-
-        const encodedURL = encodeURIComponent(url);
-
-        const submitResult = await makeRequest("https://www.virustotal.com/api/v3/urls", {
+        const response = await fetch("http://localhost:3001/scan-url", {
             method: "POST",
             headers: {
-                "accept": "application/json",
-                "content-type": "application/x-www-form-urlencoded"
+                "Content-Type": "application/json"
             },
-            body: `url=${encodedURL}`
+            body: JSON.stringify({ url: url })
         });
 
-        if (!submitResult.data?.id) {
-            throw new Error("Failed to get analysis ID");
+        if (!response.ok) {
+            throw new Error("Failed to submit URL");
         }
 
+        const result = await response.json();
+        // Wait a bit before polling
         await new Promise(resolve => setTimeout(resolve, 3000));
-
         showLoading("Getting scan results...");
-        await pollAnalysisResults(submitResult.data.id);
+        await pollAnalysisResults(result.data.id);
     } catch (error) {
-        showError(`Error: ${error.message}`);
+        showError("Error: " + error.message);
     }
 }
 
 async function scanFile() {
-    const file = getElement('fileInput').files[0];
-    if (!file) return showError("Please select a file!");
-    if (file.size > 32 * 1024 * 1024) return showError("File size exceeds 32MB limit.");
+    const fileInput = getElement('fileInput');
+    const file = fileInput.files[0];
+    if (!file) {
+        showError("Please select a file!");
+        return;
+    }
+    if (file.size > 32 * 1024 * 1024) {
+        showError("File size exceeds 32MB limit.");
+        return;
+    }
 
     try {
         showLoading("Uploading file...");
 
         const formData = new FormData();
         formData.append("file", file);
-        const uploadResult = await makeRequest("https://www.virustotal.com/api/v3/files", {
+
+        const response = await fetch("https://www.virustotal.com/api/v3/files", {
             method: "POST",
+            headers: {
+                "x-apikey": "482c8d34d486b60b7bd794f82b2cba7b523c532c2583b37732a5053f0a3d9513"
+            },
             body: formData
         });
-        if (!uploadResult.data?.id) {
-            throw new Error("Failed to get file ID");
-        }
-        await new Promise(resolve => setTimeout(resolve, 3000));
 
-        showLoading("Getting scan results...");
-        const analysisResult = await makeRequest(`https://www.virustotal.com/api/v3/analyses/${uploadResult.data.id}`);
-        if (!analysisResult.data?.id) {
-            throw new Error("Failed to get analysis results!");
+        if (!response.ok) {
+            throw new Error("Failed to upload file");
         }
-        await pollAnalysisResults(analysisResult.data.id, file.name);
+
+        const result = await response.json();
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        showLoading("Getting scan results...");
+        await pollAnalysisResults(result.data.id, file.name);
     } catch (error) {
-        showError(`Error: ${error.message}`);
+        showError("Error: " + error.message);
     }
 }
 
@@ -104,10 +100,20 @@ async function pollAnalysisResults(analysisId, fileName = '') {
 
     while (attempts < maxAttempts) {
         try {
-            showLoading(`Analyzing ${fileName ? fileName : ''}... (${((maxAttempts - attempts) * interval / 1000).toFixed(0)}s remaining)`);
-            const report = await makeRequest(`https://www.virustotal.com/api/v3/analyses/${analysisId}`);
-            const status = report.data?.attributes?.status;
-            if (!status) throw new Error("Invalid analysis response!");
+            showLoading("Analyzing " + (fileName ? fileName : '') + "... (" + (((maxAttempts - attempts) * interval) / 1000).toFixed(0) + "s remaining)");
+            const response = await fetch("https://www.virustotal.com/api/v3/analyses/" + analysisId, {
+                headers: {
+                    "x-apikey": "482c8d34d486b60b7bd794f82b2cba7b523c532c2583b37732a5053f0a3d9513"
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to get analysis results");
+            }
+
+            const report = await response.json();
+            const status = report.data && report.data.attributes && report.data.attributes.status;
+
             if (status === "completed") {
                 showFormattedResult(report);
                 break;
@@ -121,91 +127,100 @@ async function pollAnalysisResults(analysisId, fileName = '') {
             interval = Math.min(interval * 1.5, 8000);
             await new Promise(resolve => setTimeout(resolve, interval));
         } catch (error) {
-            showError(`Error: ${error.message}`);
+            showError("Error: " + error.message);
             break;
         }
     }
 }
 
 function showFormattedResult(data) {
-    if (!data?.data?.attributes?.stats) return showError("Invalid response format!");
+    if (!data || !data.data || !data.data.attributes || !data.data.attributes.stats) {
+        showError("Invalid response format!");
+        return;
+    }
     const stats = data.data.attributes.stats;
     const total = Object.values(stats).reduce((sum, val) => sum + val, 0);
-    if (!total) return showError("No analysis results available!");
-    const getPercent = val => ((val / total) * 100).toFixed(1);
+    if (!total) {
+        showError("No analysis results available!");
+        return;
+    }
+
+    function getPercent(val) {
+        return ((val / total) * 100).toFixed(1);
+    }
+
     const categories = {
         'malicious': { color: 'malicious', label: 'Malicious' },
         'suspicious': { color: 'suspicious', label: 'Suspicious' },
         'harmless': { color: 'safe', label: 'Clean' },
         'undetected': { color: 'undetected', label: 'Undetected' }
     };
-    const percents = Object.keys(categories).reduce((acc, key) => {
-        acc[key] = getPercent(stats[key]);
-        return acc;
-    }, {});
-    const verdict = stats.malicious > 0 ? "Malicious" : stats.suspicious > 0 ? "Suspicious" : "Safe";
-    const verdictClass = stats.malicious > 0 ? "malicious" : stats.suspicious > 0 ? "suspicious" : "safe";
 
-    updateResult(`
-        <h3>Scan Report</h3>
-        <div class="scan-stats">
-            <p><strong>Verdict: </strong> <span class="${verdictClass}">${verdict}</span></p>
-            <div class="progress-section">
-                <div class="progress-label">
-                    <span>Detection Results</span>
-                    <span class="progress-percent">${percents.malicious}% Detection Rate</span>
-                </div>
-                <div class="progress-stacked">
-                    ${Object.entries(categories).map(([key, { color }]) => `
-                        <div class="progress-bar ${color}" style="width: ${percents[key]}%" title="${categories[key].label}: ${stats[key]} (${percents[key]}%)"></div>
-                    `).join('')}
-                </div>
-                <div class="progress-legend">
-                    ${Object.entries(categories).map(([key, { color, label }]) => `
-                        <div class="legend-item">
-                            <span class="legend-color ${color}"></span>
-                            <span>${label} (${percents[key]}%)</span>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-            <div class="detection-details">
-               ${Object.entries(categories).map(([key, { color, label }]) => `
-                    <div class="detail-item ${color}">
-                        <span class="detail-label">${label}</span>
-                        <span class="detail-value">${stats[key]}</span>
-                        <span class="detail-percent">${percents[key]}%<span>
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-        <button onclick="showFullReport(this.getAttribute('data-report'))" data-report='${JSON.stringify(data)}'> View Full Report</button>
-    `);
+    const percents = {};
+    for (const key in categories) {
+        percents[key] = getPercent(stats[key] || 0);
+    }
 
-    setTimeout(() => getElement('result').querySelector('.progress-stacked').classList.add('animate'), 1000);
+    const verdict = stats.malicious > 0 ? "Malicious" : (stats.suspicious > 0 ? "Suspicious" : "Safe");
+    const verdictClass = stats.malicious > 0 ? "malicious" : (stats.suspicious > 0 ? "suspicious" : "safe");
+
+    let html = '<h3>Scan Report</h3>' +
+        '<div class="scan-stats">' +
+        '<p><strong>Verdict: </strong> <span class="' + verdictClass + '">' + verdict + '</span></p>' +
+        '<div class="progress-section">' +
+        '<div class="progress-label">' +
+        '<span>Detection Results</span>' +
+        '<span class="progress-percent">' + percents.malicious + '% Detection Rate</span>' +
+        '</div>' +
+        '<div class="progress-stacked">';
+
+    for (const key in categories) {
+        html += '<div class="progress-bar ' + categories[key].color + '" style="width: ' + percents[key] + '%" title="' + categories[key].label + ': ' + (stats[key] || 0) + ' (' + percents[key] + '%)"></div>';
+    }
+
+    html += '</div><div class="progress-legend">';
+
+    for (const key in categories) {
+        html += '<div class="legend-item"><span class="legend-color ' + categories[key].color + '"></span><span>' + categories[key].label + ' (' + percents[key] + '%)</span></div>';
+    }
+
+    html += '</div></div><div class="detection-details">';
+
+    for (const key in categories) {
+        html += '<div class="detail-item ' + categories[key].color + '"><span class="detail-label">' + categories[key].label + '</span><span class="detail-value">' + (stats[key] || 0) + '</span><span class="detail-percent">' + percents[key] + '%<span></div>';
+    }
+
+    html += '</div></div><button onclick="showFullReport(this.getAttribute(\'data-report\'))" data-report=\'' + JSON.stringify(data) + '\'> View Full Report</button>';
+
+    updateResult(html);
+
+    setTimeout(() => {
+        const progressStacked = getElement('result').querySelector('.progress-stacked');
+        if (progressStacked) {
+            progressStacked.classList.add('animate');
+        }
+    }, 1000);
 }
 
 function showFullReport(reportData) {
     const data = typeof reportData === 'string' ? JSON.parse(reportData) : reportData;
     const modal = getElement('FullReportModel');
-    const results = data.data?.attributes?.results;
+    const results = data.data && data.data.attributes && data.data.attributes.results;
 
-    getElement("FullReportContent").innerHTML = `
-      <h3>Full Report Details</h3>
-        ${results ? `
-            <table>
-              <tr><th>Engine</th><th>Result</th></tr>
-               ${Object.entries(results).map(([engine, 
-               { category}]) => `
-                    <tr>
-                      <td>${engine}</td>
-                      <td class="${category === "malicious" ? "malicious" : category === "suspicious" ? "suspicious" : "safe" }">${category}</td>
-                    </tr>
-                `).join('')}
-            </table>
-        ` : '<p>No detailed results available!</p>'}
-    `;
+    let html = '<h3>Full Report Details</h3>';
+    if (results) {
+        html += '<table><tr><th>Engine</th><th>Result</th></tr>';
+        for (const engine in results) {
+            const category = results[engine].category;
+            const categoryClass = category === "malicious" ? "malicious" : (category === "suspicious" ? "suspicious" : "safe");
+            html += '<tr><td>' + engine + '</td><td class="' + categoryClass + '">' + category + '</td></tr>';
+        }
+        html += '</table>';
+    } else {
+        html += '<p>No detailed results available!</p>';
+    }
     modal.style.display = "block";
+    getElement("FullReportContent").innerHTML = html;
     modal.offsetHeight;
     modal.classList.add("show");
 }
@@ -213,12 +228,16 @@ function showFullReport(reportData) {
 const closeModal = () => {
     const modal = getElement("FullReportModel");
     modal.classList.remove("show");
-    setTimeout(() => modal.style.display = "none", 300);
+    setTimeout(() => {
+        modal.style.display = "none";
+    }, 300);
 }
 
 window.addEventListener('load', () => {
     const modal = getElement('FullReportModel');
-    window.addEventListener('click', e => e.target === modal && closeModal());
+    window.addEventListener('click', e => {
+        if (e.target === modal) closeModal();
+    });
 
     const submitBtn = getElement('submitFeedback');
     const feedbackInput = getElement('feedbackInput');
@@ -247,7 +266,6 @@ window.addEventListener('load', () => {
             feedbackMessage.style.color = 'var(--success)';
             feedbackMessage.textContent = 'Thank you for your feedback!';
             feedbackInput.value = '';
-            // Refresh feedback list after successful submission
             loadFeedbackList();
         } catch (error) {
             feedbackMessage.style.display = 'block';
@@ -256,7 +274,6 @@ window.addEventListener('load', () => {
         }
     });
 
-    // Function to load and display feedback list
     async function loadFeedbackList() {
         const feedbackList = getElement('feedbackList');
         try {
@@ -280,8 +297,5 @@ window.addEventListener('load', () => {
         }
     }
 
-    // Load feedback list on page load
-    window.addEventListener('load', () => {
-        loadFeedbackList();
-    });
+    loadFeedbackList();
 });

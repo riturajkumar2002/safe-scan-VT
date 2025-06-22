@@ -2,13 +2,18 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const axios = require('axios');
 
 const app = express();
 const PORT = 3001;
 
+// Replace this with your real VirusTotal API key
+const VIRUSTOTAL_API_KEY = '482c8d34d486b60b7bd794f82b2cba7b523c532c2583b37732a5053f0a3d9513';
+
 app.use(cors());
 app.use(express.json());
 
+// === POST Feedback ===
 app.post('/feedback', (req, res) => {
     const { feedback } = req.body;
     if (!feedback) {
@@ -26,6 +31,7 @@ app.post('/feedback', (req, res) => {
     });
 });
 
+// === GET Feedback ===
 app.get('/feedback', (req, res) => {
     const feedbackFile = path.join(__dirname, 'feedback.txt');
     fs.readFile(feedbackFile, 'utf8', (err, data) => {
@@ -38,6 +44,34 @@ app.get('/feedback', (req, res) => {
     });
 });
 
+// === POST URL to VirusTotal ===
+app.post('/scan-url', async (req, res) => {
+    const { url } = req.body;
+    if (!url) {
+        return res.status(400).json({ error: 'URL is required' });
+    }
+
+    try {
+        const response = await axios.post(
+            'https://www.virustotal.com/api/v3/urls',
+            new URLSearchParams({ url: url }).toString(),
+            {
+                headers: {
+                    'x-apikey': VIRUSTOTAL_API_KEY,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            }
+        );
+
+        const scanData = response.data;
+        res.json(scanData);
+    } catch (error) {
+        console.error('Error from VirusTotal API:', error.response?.data || error.message);
+        res.status(500).json({ error: 'Failed to scan URL', details: error.response?.data || error.message });
+    }
+});
+
+// === Start Server ===
 app.listen(PORT, () => {
-    console.log(`Feedback server running on http://localhost:${PORT}`);
+    console.log(`Server running on http://localhost:${PORT}`);
 });

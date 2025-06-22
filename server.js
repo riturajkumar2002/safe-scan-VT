@@ -71,6 +71,30 @@ app.post('/scan-url', async (req, res) => {
     }
 });
 
+// === GET Analysis Results from VirusTotal ===
+app.get('/analysis/:id', async (req, res) => {
+    const analysisId = req.params.id;
+    if (!analysisId) {
+        return res.status(400).json({ error: 'Analysis ID is required' });
+    }
+
+    try {
+        const response = await axios.get(
+            `https://www.virustotal.com/api/v3/analyses/${analysisId}`,
+            {
+                headers: {
+                    'x-apikey': VIRUSTOTAL_API_KEY
+                }
+            }
+        );
+
+        res.json(response.data);
+    } catch (error) {
+        console.error('Error fetching analysis results:', error.response?.data || error.message);
+        res.status(500).json({ error: 'Failed to fetch analysis results', details: error.response?.data || error.message });
+    }
+});
+
 // === Start Server ===
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

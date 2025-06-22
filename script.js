@@ -101,11 +101,7 @@ async function pollAnalysisResults(analysisId, fileName = '') {
     while (attempts < maxAttempts) {
         try {
             showLoading("Analyzing " + (fileName ? fileName : '') + "... (" + (((maxAttempts - attempts) * interval) / 1000).toFixed(0) + "s remaining)");
-            const response = await fetch("https://www.virustotal.com/api/v3/analyses/" + analysisId, {
-                headers: {
-                    "x-apikey": "482c8d34d486b60b7bd794f82b2cba7b523c532c2583b37732a5053f0a3d9513"
-                }
-            });
+            const response = await fetch("http://localhost:3001/analysis/" + analysisId);
 
             if (!response.ok) {
                 throw new Error("Failed to get analysis results");

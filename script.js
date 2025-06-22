@@ -72,11 +72,8 @@ async function scanFile() {
         const formData = new FormData();
         formData.append("file", file);
 
-        const response = await fetch("https://www.virustotal.com/api/v3/files", {
+        const response = await fetch("http://localhost:3001/scan-file", {
             method: "POST",
-            headers: {
-                "x-apikey": "482c8d34d486b60b7bd794f82b2cba7b523c532c2583b37732a5053f0a3d9513"
-            },
             body: formData
         });
 

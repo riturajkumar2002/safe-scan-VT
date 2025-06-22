@@ -95,6 +95,34 @@ app.get('/analysis/:id', async (req, res) => {
     }
 });
 
+// === POST File to VirusTotal ===
+const multer = require('multer');
+const upload = multer();
+
+app.post('/scan-file', upload.single('file'), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'File is required' });
+    }
+
+    try {
+        const response = await axios.post(
+            'https://www.virustotal.com/api/v3/files',
+            req.file.buffer,
+            {
+                headers: {
+                    'x-apikey': VIRUSTOTAL_API_KEY,
+                    'Content-Type': req.file.mimetype
+                }
+            }
+        );
+
+        res.json(response.data);
+    } catch (error) {
+        console.error('Error uploading file to VirusTotal:', error.response?.data || error.message);
+        res.status(500).json({ error: 'Failed to upload file', details: error.response?.data || error.message });
+    }
+});
+
 // === Start Server ===
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

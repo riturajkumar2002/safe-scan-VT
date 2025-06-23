@@ -13,6 +13,9 @@ const VIRUSTOTAL_API_KEY = '482c8d34d486b60b7bd794f82b2cba7b523c532c2583b37732a5
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from the root directory
+app.use(express.static(__dirname));
+
 // === POST Feedback ===
 app.post('/feedback', (req, res) => {
     const { feedback } = req.body;
@@ -97,22 +100,35 @@ app.get('/analysis/:id', async (req, res) => {
 
 // === POST File to VirusTotal ===
 const multer = require('multer');
+const FormData = require('form-data');
 const upload = multer();
 
 app.post('/scan-file', upload.single('file'), async (req, res) => {
+    console.log('Received file upload request');
     if (!req.file) {
+        console.error('No file received in request');
         return res.status(400).json({ error: 'File is required' });
     }
+    console.log('File received:', req.file.originalname, req.file.mimetype, req.file.size);
 
     try {
+        const formData = new FormData();
+        formData.append('file', req.file.buffer, {
+            filename: req.file.originalname,
+            contentType: req.file.mimetype,
+            knownLength: req.file.size
+        });
+
         const response = await axios.post(
             'https://www.virustotal.com/api/v3/files',
-            req.file.buffer,
+            formData,
             {
                 headers: {
-                    'x-apikey': VIRUSTOTAL_API_KEY,
-                    'Content-Type': req.file.mimetype
-                }
+                    ...formData.getHeaders(),
+                    'x-apikey': VIRUSTOTAL_API_KEY
+                },
+                maxContentLength: Infinity,
+                maxBodyLength: Infinity
             }
         );
 
@@ -121,6 +137,12 @@ app.post('/scan-file', upload.single('file'), async (req, res) => {
         console.error('Error uploading file to VirusTotal:', error.response?.data || error.message);
         res.status(500).json({ error: 'Failed to upload file', details: error.response?.data || error.message });
     }
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error('Unhandled error:', err);
+    res.status(500).json({ error: 'Internal Server Error', details: err.message });
 });
 
 // === Start Server ===

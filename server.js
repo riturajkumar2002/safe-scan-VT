@@ -3,9 +3,9 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
-
+require('dotenv').config();
 const app = express();
-const PORT = 3001;
+const PORT =  process.env.PORT || 3001;
 
 // Replace this with your real VirusTotal API key
 const VIRUSTOTAL_API_KEY = '482c8d34d486b60b7bd794f82b2cba7b523c532c2583b37732a5053f0a3d9513';

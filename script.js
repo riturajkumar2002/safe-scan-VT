@@ -32,7 +32,7 @@ async function scanURL() {
 
     try {
         showLoading("Submitting URL for scanning...");
-        const response = await fetch("http://localhost:3001/scan-url", {
+        const response = await fetch("https://safe-scan-vt.onrender.com/scan-url", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -72,7 +72,7 @@ async function scanFile() {
         const formData = new FormData();
         formData.append("file", file);
 
-        const response = await fetch("http://localhost:3001/scan-file", {
+        const response = await fetch("https://safe-scan-vt.onrender.com/scan-file", {
             method: "POST",
             body: formData
         });
@@ -98,7 +98,7 @@ async function pollAnalysisResults(analysisId, fileName = '') {
     while (attempts < maxAttempts) {
         try {
             showLoading("Analyzing " + (fileName ? fileName : '') + "... (" + (((maxAttempts - attempts) * interval) / 1000).toFixed(0) + "s remaining)");
-            const response = await fetch("http://localhost:3001/analysis/" + analysisId);
+            const response = await fetch("https://safe-scan-vt.onrender.com/analysis/" + analysisId);
 
             if (!response.ok) {
                 throw new Error("Failed to get analysis results");
@@ -245,7 +245,7 @@ window.addEventListener('load', () => {
             return;
         }
         try {
-            const response = await fetch('http://localhost:3001/feedback', {
+            const response = await fetch('https://safe-scan-vt.onrender.com/feedback', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -270,7 +270,7 @@ window.addEventListener('load', () => {
     async function loadFeedbackList() {
         const feedbackList = getElement('feedbackList');
         try {
-            const response = await fetch('http://localhost:3001/feedback');
+            const response = await fetch('https://safe-scan-vt.onrender.com/feedback');
             if (!response.ok) {
                 throw new Error('Failed to fetch feedback list');
             }

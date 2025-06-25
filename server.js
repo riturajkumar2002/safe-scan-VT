@@ -10,6 +10,23 @@ const PORT =  process.env.PORT || 3001;
 // Replace this with your real VirusTotal API key
 const VIRUSTOTAL_API_KEY = '482c8d34d486b60b7bd794f82b2cba7b523c532c2583b37732a5053f0a3d9513';
 
+const visitCountFile = path.join(__dirname, 'visit_count.txt');
+
+// Function to read visit count from file
+function readVisitCount() {
+    try {
+        const data = fs.readFileSync(visitCountFile, 'utf8');
+        return parseInt(data) || 0;
+    } catch (err) {
+        return 0;
+    }
+}
+
+// Function to write visit count to file
+function writeVisitCount(count) {
+    fs.writeFileSync(visitCountFile, count.toString(), 'utf8');
+}
+
 app.use(cors());
 app.use(express.json());
 
@@ -32,6 +49,22 @@ app.post('/feedback', (req, res) => {
         console.log('Feedback saved:', feedback);
         res.json({ message: 'Feedback received' });
     });
+});
+
+// Middleware to count visits to root path
+app.use((req, res, next) => {
+    if (req.path === '/' || req.path === '/index.html') {
+        let count = readVisitCount();
+        count++;
+        writeVisitCount(count);
+    }
+    next();
+});
+
+// Endpoint to get visit count
+app.get('/visit-count', (req, res) => {
+    const count = readVisitCount();
+    res.json({ count });
 });
 
 // === GET Feedback ===

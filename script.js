@@ -282,30 +282,29 @@ window.addEventListener('load', () => {
                     li.textContent = item;
                     feedbackList.appendChild(li);
                 });
-            } else {
-                feedbackList.innerHTML = '<li>No feedback available.</li>';
             }
         } catch (error) {
-            feedbackList.innerHTML = '<li>Error loading feedback list.</li>';
+            console.error('Error loading feedback list:', error);
         }
     }
 
-    loadFeedbackList();
-
-    // New function to fetch and display visit count
-    async function loadVisitCount() {
-        const visitCountSpan = getElement('visitCount');
+    // New code to fetch and update visit count
+    async function updateVisitCount() {
         try {
             const response = await fetch('/visit-count');
             if (!response.ok) {
                 throw new Error('Failed to fetch visit count');
             }
             const data = await response.json();
-            visitCountSpan.textContent = data.count;
+            const visitCountElem = getElement('visitCount');
+            visitCountElem.textContent = data.count;
         } catch (error) {
-            visitCountSpan.textContent = 'Error';
+            console.error('Error fetching visit count:', error);
+            const visitCountElem = getElement('visitCount');
+            visitCountElem.textContent = 'N/A';
         }
     }
 
-    loadVisitCount();
+    // Call updateVisitCount on page load
+    updateVisitCount();
 });

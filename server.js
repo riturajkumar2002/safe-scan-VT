@@ -1,4 +1,3 @@
-
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
@@ -16,23 +15,6 @@ app.use(express.json());
 
 // Serve static files from the root directory
 app.use(express.static(__dirname));
-
-// In-memory visitor count variable
-let visitCount = 0;
-
-// Increment visit count on each request to any path (except /visit-count to avoid counting API calls)
-app.use((req, res, next) => {
-    if (req.path !== '/visit-count') {
-        visitCount++;
-        console.log('Incrementing visit count for path:', req.path, 'Current count:', visitCount);
-    }
-    next();
-});
-
-// Endpoint to get current visit count
-app.get('/visit-count', (req, res) => {
-    res.json({ count: visitCount });
-});
 
 // === POST Feedback ===
 app.post('/feedback', (req, res) => {

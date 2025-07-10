@@ -35,9 +35,9 @@ function writeVisitCount(count) {
     fs.writeFileSync(visitCountFile, count.toString(), 'utf8');
 }
 
-// Increment visit count on each request to root or index.html
+// Increment visit count on each request to any path (except /visit-count to avoid counting API calls)
 app.use((req, res, next) => {
-    if (req.path === '/' || req.path === '/index.html') {
+    if (req.path !== '/visit-count') {
         let count = readVisitCount();
         count++;
         writeVisitCount(count);

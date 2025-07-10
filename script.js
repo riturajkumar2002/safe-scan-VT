@@ -32,7 +32,7 @@ async function scanURL() {
 
     try {
         showLoading("Submitting URL for scanning...");
-        const response = await fetch("https://safe-scan-vt.onrender.com/scan-url", {
+        const response = await fetch("/scan-url", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"

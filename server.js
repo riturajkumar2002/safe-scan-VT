@@ -17,56 +17,21 @@ app.use(express.json());
 // Serve static files from the root directory
 app.use(express.static(__dirname));
 
-// Visitor count file path
-const visitCountFile = path.join(__dirname, 'visitCount.txt');
-
-// Ensure visitCount.txt exists on server start
-if (!fs.existsSync(visitCountFile)) {
-    try {
-        fs.writeFileSync(visitCountFile, '0', 'utf8');
-        console.log('Created visitCount.txt with initial count 0');
-    } catch (err) {
-        console.error('Error creating visitCount.txt:', err);
-    }
-}
-
-// Function to read visit count from file
-function readVisitCount() {
-    try {
-        const data = fs.readFileSync(visitCountFile, 'utf8');
-        console.log('Read visit count:', data);
-        return parseInt(data) || 0;
-    } catch (err) {
-        console.error('Error reading visit count:', err);
-        return 0;
-    }
-}
-
-// Function to write visit count to file
-function writeVisitCount(count) {
-    try {
-        fs.writeFileSync(visitCountFile, count.toString(), 'utf8');
-        console.log('Wrote visit count:', count);
-    } catch (err) {
-        console.error('Error writing visit count:', err);
-    }
-}
+// In-memory visitor count variable
+let visitCount = 0;
 
 // Increment visit count on each request to any path (except /visit-count to avoid counting API calls)
 app.use((req, res, next) => {
     if (req.path !== '/visit-count') {
-        console.log('Incrementing visit count for path:', req.path);
-        let count = readVisitCount();
-        count++;
-        writeVisitCount(count);
+        visitCount++;
+        console.log('Incrementing visit count for path:', req.path, 'Current count:', visitCount);
     }
     next();
 });
 
 // Endpoint to get current visit count
 app.get('/visit-count', (req, res) => {
-    const count = readVisitCount();
-    res.json({ count });
+    res.json({ count: visitCount });
 });
 
 // === POST Feedback ===

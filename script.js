@@ -1,3 +1,5 @@
+const getElement = id => document.getElementById(id);
+
 // Existing load event
 window.addEventListener('load', () => {
     const modal = getElement('FullReportModel');

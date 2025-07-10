@@ -288,23 +288,5 @@ window.addEventListener('load', () => {
         }
     }
 
-    // New code to fetch and update visit count
-    async function updateVisitCount() {
-        try {
-            const response = await fetch('/visit-count');
-            if (!response.ok) {
-                throw new Error('Failed to fetch visit count');
-            }
-            const data = await response.json();
-            const visitCountElem = getElement('visitCount');
-            visitCountElem.textContent = data.count;
-        } catch (error) {
-            console.error('Error fetching visit count:', error);
-            const visitCountElem = getElement('visitCount');
-            visitCountElem.textContent = 'N/A';
-        }
-    }
-
-    // Call updateVisitCount on page load
-    updateVisitCount();
+    // Removed visit count update code as per user request
 });

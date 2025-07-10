@@ -4,28 +4,31 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Safe Scan VT | Rituraj</title>
-  <link rel="stylesheet" href="style.css" />
   <link rel="icon" type="image/x-icon" href="favicon.ico" />
-  <!-- Your inline styles are unchanged -->
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="container">
     <h1>VirusTotal Scanner</h1>
 
+    <!-- URL Scanner -->
     <section>
       <h2>Scan a URL</h2>
       <input type="text" id="urlInput" placeholder="Enter URL (e.g., https://example.com)" />
       <button id="scanURLBtn" type="button">Scan URL</button>
     </section>
 
+    <!-- File Scanner -->
     <section>
       <h2>Scan a file</h2>
       <input type="file" id="fileInput" />
       <button id="scanFileBtn" type="button">Scan File</button>
     </section>
 
+    <!-- Scan Result -->
     <div id="result"></div>
 
+    <!-- Full Report Modal -->
     <div id="FullReportModel" class="modal">
       <div class="modal-content">
         <span class="close" onclick="closeModal()">&times;</span>
@@ -34,6 +37,7 @@
       </div>
     </div>
 
+    <!-- Feedback -->
     <section id="feedback-section">
       <h2>Feedback</h2>
       <textarea id="feedbackInput" rows="4" placeholder="Write your feedback here..."></textarea>
@@ -45,13 +49,14 @@
       </div>
     </section>
 
+    <!-- Footer -->
     <footer id="footer" style="margin-top: 20px; text-align: center; font-size: 0.9rem; color: #555;">
       <p>Visitors: <span id="Visitors">Loading...</span></p>
-      <p>Made by rituraj</p>
+      <p>Made by Rituraj</p>
     </footer>
   </div>
 
-  <!-- ✅ Load JavaScript last -->
+  <!-- Load JS last -->
   <script src="script.js"></script>
 </body>
 </html>

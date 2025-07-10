@@ -280,10 +280,32 @@ window.addEventListener('load', () => {
                 data.feedbacks.forEach(item => {
                     const li = document.createElement('li');
                     li.textContent = item;
+                    feedbackList.appendChild(li);
                 });
+            } else {
+                feedbackList.innerHTML = '<li>No feedback available.</li>';
             }
         } catch (error) {
-            console.error('Error loading feedback list:', error);
+            feedbackList.innerHTML = '<li>Error loading feedback list.</li>';
         }
     }
+
+    loadFeedbackList();
+
+    // New function to fetch and display visit count
+    async function loadVisitCount() {
+        const visitCountSpan = getElement('visitCount');
+        try {
+            const response = await fetch('/visit-count');
+            if (!response.ok) {
+                throw new Error('Failed to fetch visit count');
+            }
+            const data = await response.json();
+            visitCountSpan.textContent = data.count;
+        } catch (error) {
+            visitCountSpan.textContent = 'Error';
+        }
+    }
+
+    loadVisitCount();
 });

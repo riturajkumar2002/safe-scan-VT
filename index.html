@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="style.css" />
     <title>Safe Scan VT | Rituraj</title>
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <style>
         :root {
             --primary: #007BFF;
@@ -33,22 +33,27 @@
             box-shadow: 0 8px 20px var(--shadow);
         }
 
-        h1, h2, h3 {
+        h1,
+        h2,
+        h3 {
             text-align: center;
             color: var(--primary);
         }
 
-        input[type="text"], textarea, input[type="file"] {
+        input[type='text'],
+        textarea,
+        input[type='file'] {
             width: 100%;
             padding: 10px;
             margin: 10px 0 20px;
             border: 1px solid #ccc;
             border-radius: 8px;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
             transition: border 0.3s;
         }
 
-        input:focus, textarea:focus {
+        input:focus,
+        textarea:focus {
             border-color: var(--primary);
             outline: none;
         }
@@ -86,7 +91,7 @@
             width: 100%;
             height: 100%;
             overflow: auto;
-            background-color: rgba(0,0,0,0.5);
+            background-color: rgba(0, 0, 0, 0.5);
         }
 
         .modal-content {
@@ -108,7 +113,8 @@
             cursor: pointer;
         }
 
-        .close:hover, .close:focus {
+        .close:hover,
+        .close:focus {
             color: black;
             text-decoration: none;
         }
@@ -143,16 +149,23 @@
             color: gray;
         }
 
-        .legend-color.safe { background-color: var(--success); }
-        .legend-color.malicious { background-color: var(--danger); }
-        .legend-color.suspicious { background-color: orange; }
-        .legend-color.undetected { background-color: gray; }
+        .legend-color.safe {
+            background-color: var(--success);
+        }
+        .legend-color.malicious {
+            background-color: var(--danger);
+        }
+        .legend-color.suspicious {
+            background-color: orange;
+        }
+        .legend-color.undetected {
+            background-color: gray;
+        }
 
         .progress-bar {
             height: 10px;
             display: inline-block;
         }
-
         .progress-stacked {
             width: 100%;
             display: flex;
@@ -160,34 +173,43 @@
             overflow: hidden;
             margin-top: 10px;
         }
-
         .legend-item {
             display: flex;
             align-items: center;
             gap: 10px;
             margin: 5px 0;
         }
-
         .legend-color {
             width: 16px;
             height: 16px;
             border-radius: 4px;
         }
-
         .detail-item {
             display: flex;
             justify-content: space-between;
             padding: 5px 0;
         }
-
         .detail-item span {
             flex: 1;
             text-align: center;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* --- NEW CSS FOR VISITOR COUNTER --- */
+        #visitor-section {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #6c757d;
         }
     </style>
 </head>
@@ -197,13 +219,13 @@
 
         <section>
             <h2>Scan a URL</h2>
-            <input type="text" id="urlInput" placeholder="Enter URL (e.g., https://example.com)">
+            <input type="text" id="urlInput" placeholder="Enter URL (e.g., https://example.com)" />
             <button onclick="scanURL()" type="button">Scan URL</button>
         </section>
 
         <section>
             <h2>Scan a file</h2>
-            <input type="file" id="fileInput">
+            <input type="file" id="fileInput" />
             <button onclick="scanFile()" type="button">Scan File</button>
         </section>
 
@@ -221,12 +243,24 @@
             <h2>Feedback</h2>
             <textarea id="feedbackInput" rows="4" placeholder="Write your feedback here..."></textarea>
             <button id="submitFeedback">Submit Feedback</button>
-            <p id="feedbackMessage" style="display:none;"></p>
+            <p id="feedbackMessage" style="display: none;"></p>
             <div id="feedbackListContainer">
                 <h3>All Feedback</h3>
                 <ul id="feedbackList"></ul>
             </div>
         </section>
+
+        <!-- === NEW VISITOR COUNTER SECTION === -->
+        <section id="visitor-section">
+            <p>Total Visitors: <strong id="visitor-count">Loading...</strong></p>
+        </section>
+        <!-- ================================== -->
+
         <footer id="footer" style="margin-top: 20px; text-align: center; font-size: 0.9rem; color: #555;">
-            <p>Number of people opened this project: <span id="visitCount">Loading...</span></p>
             <p>Made by rituraj</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

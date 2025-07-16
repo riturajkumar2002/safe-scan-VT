@@ -213,41 +213,8 @@ const closeModal = () => getElement("FullReportModel").style.display = "none";
 
 window.addEventListener("load", () => {
     updateVisitorCount();
-    loadFeedbackList(); // Load feedback when the page loads
 
     window.addEventListener("click", (e) => {
         if (e.target === getElement("FullReportModel")) closeModal();
-    });
-
-    getElement("submitFeedback").addEventListener("click", async () => {
-        const feedbackInput = getElement("feedbackInput");
-        const feedbackMessage = getElement("feedbackMessage");
-        const feedback = feedbackInput.value.trim();
-
-        if (!feedback) {
-            feedbackMessage.textContent = "Please enter your feedback before submitting.";
-            feedbackMessage.style.color = "var(--danger)";
-            feedbackMessage.style.display = "block";
-            return;
-        }
-
-        try {
-            const response = await fetch("https://safe-scan-vt.onrender.com/feedback", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ feedback }),
-            });
-            if (!response.ok) throw new Error("Failed to submit feedback");
-            
-            feedbackMessage.textContent = "Thank you for your feedback!";
-            feedbackMessage.style.color = "var(--success)";
-            feedbackInput.value = "";
-            loadFeedbackList(); // Reload the list to show the new feedback
-        } catch (error) {
-            feedbackMessage.textContent = "Error submitting feedback. Please try again later.";
-            feedbackMessage.style.color = "var(--danger)";
-        } finally {
-            feedbackMessage.style.display = "block";
-        }
     });
 });

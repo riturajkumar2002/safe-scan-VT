@@ -2,15 +2,220 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="style.css" />
     <title>Safe Scan VT | Rituraj</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <style>
+        :root {
+            --primary: #007BFF;
+            --success: #28a745;
+            --danger: #dc3545;
+            --bg: #f8f9fa;
+            --text: #343a40;
+            --card-bg: #ffffff;
+            --shadow: rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 8px 20px var(--shadow);
+        }
+
+        h1,
+        h2,
+        h3 {
+            text-align: center;
+            color: var(--primary);
+        }
+
+        input[type='text'],
+        textarea,
+        input[type='file'] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: border 0.3s;
+        }
+
+        input:focus,
+        textarea:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+            transform: scale(1.03);
+        }
+
+        #result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f1f1f1;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px var(--shadow);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            padding-top: 60px;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px var(--shadow);
+            animation: fadeIn 0.5s;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+        }
+
+        ul#feedbackList {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        ul#feedbackList li {
+            padding: 10px;
+            background: #e9ecef;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            transition: background-color 0.3s;
+        }
+
+        ul#feedbackList li:hover {
+            background-color: #d6d8db;
+        }
+
+        .safe {
+            color: var(--success);
+        }
+        .malicious {
+            color: var(--danger);
+        }
+        .suspicious {
+            color: orange;
+        }
+        .undetected {
+            color: gray;
+        }
+
+        .legend-color.safe {
+            background-color: var(--success);
+        }
+        .legend-color.malicious {
+            background-color: var(--danger);
+        }
+        .legend-color.suspicious {
+            background-color: orange;
+        }
+        .legend-color.undetected {
+            background-color: gray;
+        }
+
+        .progress-bar {
+            height: 10px;
+            display: inline-block;
+        }
+        .progress-stacked {
+            width: 100%;
+            display: flex;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 5px 0;
+        }
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+        }
+        .detail-item span {
+            flex: 1;
+            text-align: center;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* --- NEW CSS FOR VISITOR COUNTER --- */
+        #visitor-section {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #6c757d;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1>Safe Scan</h1>
-        <p class="subtitle">Scan files and URLs for threats using the VirusTotal API.</p>
+        <h1>VirusTotal Scanner</h1>
 
         <section>
             <h2>Scan a URL</h2>
@@ -19,7 +224,7 @@
         </section>
 
         <section>
-            <h2>Scan a File</h2>
+            <h2>Scan a file</h2>
             <input type="file" id="fileInput" />
             <button onclick="scanFile()" type="button">Scan File</button>
         </section>
@@ -28,15 +233,21 @@
 
         <div id="FullReportModel" class="modal">
             <div class="modal-content">
-                <button class="close" onclick="closeModal()">&times;</button>
-                <h2>Full Report Details</h2>
+                <span class="close" onclick="closeModal()">&times;</span>
+                <h2>Full Report</h2>
                 <div id="FullReportContent"></div>
             </div>
         </div>
 
-        <footer id="footer">
-            <p>Total Visitors: <strong id="visitor-count">...</strong></p>
-            <p>Made by Rituraj</p>
+
+        <!-- === NEW VISITOR COUNTER SECTION === -->
+        <section id="visitor-section">
+            <p>Total Visitors: <strong id="visitor-count">Loading...</strong></p>
+        </section>
+        <!-- ================================== -->
+
+        <footer id="footer" style="margin-top: 20px; text-align: center; font-size: 0.9rem; color: #555;">
+            <p>Made by rituraj</p>
         </footer>
     </div>
 

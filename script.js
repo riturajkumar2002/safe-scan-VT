@@ -2,20 +2,14 @@
 const getElement = id => document.getElementById(id);
 
 // --- NEW VISITOR COUNTER FUNCTION ---
-// This function fetches the count from your serverless API
 function updateVisitorCount() {
-    // The endpoint for the serverless function. 
-    // This relative path '/api/counter' works when you deploy on Vercel/Netlify.
-    // If you host the API elsewhere, you'd use the full URL, e.g., 'https://your-api.com/api/counter'
     const apiEndpoint = '/api/counter';
 
     fetch(apiEndpoint)
         .then(response => {
             if (!response.ok) {
-                // Don't throw an error for the counter, just log it.
-                // This prevents it from breaking other parts of the site if the counter is down.
                 console.error('Visitor counter API response was not ok.');
-                return { count: 'N/A' }; // Return a default object
+                return { count: 'N/A' };
             }
             return response.json();
         })
@@ -29,12 +23,47 @@ function updateVisitorCount() {
             console.error('Error fetching visitor count:', error);
             const countElement = getElement('visitor-count');
             if (countElement) {
-                // Display 'N/A' (Not Available) if the fetch fails
                 countElement.textContent = 'N/A';
             }
         });
 }
-// --- END NEW VISITOR COUNTER FUNCTION ---
+
+// --- CORRECTED AND IMPROVED FEEDBACK FUNCTION ---
+// Moved this function outside the 'load' event listener for better structure.
+async function loadFeedbackList() {
+    const feedbackList = getElement("feedbackList");
+    try {
+        const response = await fetch("https://safe-scan-vt.onrender.com/feedback");
+        if (!response.ok) {
+            throw new Error(`Failed to fetch feedback list (Status: ${response.status})`);
+        }
+        const data = await response.json();
+
+        // --- IMPORTANT: DEBUGGING STEP ---
+        // This will show you the exact structure of what your API is sending.
+        console.log("Feedback data from API:", data);
+
+        // --- ROBUST DATA HANDLING ---
+        // Check if the data is an array itself, or if it has a property that is an array.
+        const feedbacks = Array.isArray(data) ? data : data.feedbacks || data.data || [];
+
+        feedbackList.innerHTML = ""; // Clear the list before adding new items
+
+        if (feedbacks.length > 0) {
+            feedbacks.forEach((item) => {
+                const li = document.createElement("li");
+                // If 'item' is an object with a 'text' property, use item.text. Adjust as needed.
+                li.textContent = typeof item === 'object' ? item.text : item;
+                feedbackList.appendChild(li);
+            });
+        } else {
+            feedbackList.innerHTML = "<li>No feedback has been submitted yet.</li>";
+        }
+    } catch (error) {
+        console.error("Error loading feedback:", error);
+        feedbackList.innerHTML = `<li>Error: Could not load feedback. ${error.message}</li>`;
+    }
+}
 
 
 const updateResult = (content, display = true) => {
@@ -59,28 +88,20 @@ async function scanURL() {
         showError("Please enter a URL");
         return;
     }
-
     try {
         new URL(url);
     } catch {
         showError("Please enter a valid URL, e.g., https://example.com");
         return;
     }
-
     try {
         showLoading("Submitting URL for scanning...");
         const response = await fetch("https://safe-scan-vt.onrender.com/scan-url", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ url: url })
         });
-
-        if (!response.ok) {
-            throw new Error("Failed to submit URL");
-        }
-
+        if (!response.ok) throw new Error("Failed to submit URL");
         const result = await response.json();
         await new Promise(resolve => setTimeout(resolve, 3000));
         showLoading("Getting scan results...");
@@ -101,22 +122,15 @@ async function scanFile() {
         showError("File size exceeds 32MB limit.");
         return;
     }
-
     try {
         showLoading("Uploading file...");
-
         const formData = new FormData();
         formData.append("file", file);
-
         const response = await fetch("https://safe-scan-vt.onrender.com/scan-file", {
             method: "POST",
             body: formData
         });
-
-        if (!response.ok) {
-            throw new Error("Failed to upload file");
-        }
-
+        if (!response.ok) throw new Error("Failed to upload file");
         const result = await response.json();
         await new Promise(resolve => setTimeout(resolve, 3000));
         showLoading("Getting scan results...");
@@ -130,40 +144,30 @@ async function pollAnalysisResults(analysisId, fileName = '') {
     const maxAttempts = 20;
     let attempts = 0;
     let interval = 2000;
-
     while (attempts < maxAttempts) {
         try {
-            showLoading("Analyzing " + (fileName ? fileName : '') + "... (" + (((maxAttempts - attempts) * interval) / 1000).toFixed(0) + "s remaining)");
-            const response = await fetch("https://safe-scan-vt.onrender.com/analysis/" + analysisId);
-
-            if (!response.ok) {
-                throw new Error("Failed to get analysis results");
-            }
-
+            showLoading(`Analyzing ${fileName}... (${Math.round(((maxAttempts - attempts) * interval) / 1000)}s remaining)`);
+            const response = await fetch(`https://safe-scan-vt.onrender.com/analysis/${analysisId}`);
+            if (!response.ok) throw new Error("Failed to get analysis results");
             const report = await response.json();
-            const status = report.data && report.data.attributes && report.data.attributes.status;
-
+            const status = report.data?.attributes?.status;
             if (status === "completed") {
                 showFormattedResult(report);
-                break;
+                return;
             }
-            if (status === "failed") {
-                throw new Error("Analysis failed");
-            }
-            if (++attempts >= maxAttempts) {
-                throw new Error("Analysis timed out - please try again!");
-            }
+            if (status === "failed") throw new Error("Analysis failed");
+            if (++attempts >= maxAttempts) throw new Error("Analysis timed out - please try again!");
             interval = Math.min(interval * 1.5, 8000);
             await new Promise(resolve => setTimeout(resolve, interval));
         } catch (error) {
             showError("Error: " + error.message);
-            break;
+            return;
         }
     }
 }
 
 function showFormattedResult(data) {
-    if (!data || !data.data || !data.data.attributes || !data.data.attributes.stats) {
+    if (!data?.data?.attributes?.stats) {
         showError("Invalid response format!");
         return;
     }
@@ -173,215 +177,77 @@ function showFormattedResult(data) {
         showError("No analysis results available!");
         return;
     }
-
-    function getPercent(val) {
-        return ((val / total) * 100).toFixed(1);
-    }
-
+    const getPercent = (val) => ((val / total) * 100).toFixed(1);
     const categories = {
         malicious: { color: "malicious", label: "Malicious" },
         suspicious: { color: "suspicious", label: "Suspicious" },
         harmless: { color: "safe", label: "Clean" },
         undetected: { color: "undetected", label: "Undetected" },
     };
+    const percents = Object.fromEntries(Object.keys(categories).map(key => [key, getPercent(stats[key] || 0)]));
+    const verdict = stats.malicious > 0 ? "Malicious" : stats.suspicious > 0 ? "Suspicious" : "Safe";
+    const verdictClass = stats.malicious > 0 ? "malicious" : stats.suspicious > 0 ? "suspicious" : "safe";
 
-    const percents = {};
-    for (const key in categories) {
-        percents[key] = getPercent(stats[key] || 0);
-    }
-
-    const verdict =
-        stats.malicious > 0
-            ? "Malicious"
-            : stats.suspicious > 0
-            ? "Suspicious"
-            : "Safe";
-    const verdictClass =
-        stats.malicious > 0
-            ? "malicious"
-            : stats.suspicious > 0
-            ? "suspicious"
-            : "safe";
-
-    let html =
-        '<h3>Scan Report</h3>' +
-        '<div class="scan-stats">' +
-        '<p><strong>Verdict: </strong> <span class="' +
-        verdictClass +
-        '">' +
-        verdict +
-        "</span></p>" +
-        '<div class="progress-section">' +
-        '<div class="progress-label">' +
-        '<span>Detection Results</span>' +
-        '<span class="progress-percent">' +
-        percents.malicious +
-        '% Detection Rate</span>' +
-        "</div>" +
-        '<div class="progress-stacked">';
-
-    for (const key in categories) {
-        html +=
-            '<div class="progress-bar ' +
-            categories[key].color +
-            '" style="width: ' +
-            percents[key] +
-            '%" title="' +
-            categories[key].label +
-            ": " +
-            (stats[key] || 0) +
-            " (" +
-            percents[key] +
-            '%)"></div>';
-    }
-
-    html += "</div><div class=\"progress-legend\">";
-
-    for (const key in categories) {
-        html +=
-            '<div class="legend-item"><span class="legend-color ' +
-            categories[key].color +
-            '"></span><span>' +
-            categories[key].label +
-            " (" +
-            percents[key] +
-            '%)</span></div>';
-    }
-
-    html += "</div></div><div class=\"detection-details\">";
-
-    for (const key in categories) {
-        html +=
-            '<div class="detail-item ' +
-            categories[key].color +
-            '"><span class="detail-label">' +
-            categories[key].label +
-            '</span><span class="detail-value">' +
-            (stats[key] || 0) +
-            '</span><span class="detail-percent">' +
-            percents[key] +
-            '%<span></div>';
-    }
-
-    html +=
-        '</div></div><button onclick="showFullReport(this.getAttribute(\'data-report\'))" data-report=\'' +
-        JSON.stringify(data) +
-        "'> View Full Report</button>";
-
+    let html = `<h3>Scan Report</h3><div class="scan-stats"><p><strong>Verdict: </strong> <span class="${verdictClass}">${verdict}</span></p><div class="progress-section"><div class="progress-label"><span>Detection Results</span><span class="progress-percent">${percents.malicious}% Detection Rate</span></div><div class="progress-stacked">${Object.keys(categories).map(key => `<div class="progress-bar ${categories[key].color}" style="width: ${percents[key]}%" title="${categories[key].label}: ${stats[key] || 0} (${percents[key]}%)"></div>`).join('')}</div><div class="progress-legend">${Object.keys(categories).map(key => `<div class="legend-item"><span class="legend-color ${categories[key].color}"></span><span>${categories[key].label} (${percents[key]}%)</span></div>`).join('')}</div></div><div class="detection-details">${Object.keys(categories).map(key => `<div class="detail-item ${categories[key].color}"><span class="detail-label">${categories[key].label}</span><span class="detail-value">${stats[key] || 0}</span><span class="detail-percent">${percents[key]}%<span></div>`).join('')}</div></div><button onclick="showFullReport(this.getAttribute('data-report'))" data-report='${JSON.stringify(data)}'> View Full Report</button>`;
     updateResult(html);
-
-    setTimeout(() => {
-        const progressStacked = getElement("result").querySelector(".progress-stacked");
-        if (progressStacked) {
-            progressStacked.classList.add("animate");
-        }
-    }, 1000);
 }
 
 function showFullReport(reportData) {
-    const data = typeof reportData === "string" ? JSON.parse(reportData) : reportData;
-    const modal = getElement("FullReportModel");
-    const results = data.data && data.data.attributes && data.data.attributes.results;
-
-    let html = "<h3>Full Report Details</h3>";
+    const data = typeof reportData === 'string' ? JSON.parse(reportData) : reportData;
+    const modal = getElement('FullReportModel');
+    const results = data.data?.attributes?.results;
+    let html = '<h3>Full Report Details</h3>';
     if (results) {
-        html += "<table><tr><th>Engine</th><th>Result</th></tr>";
-        for (const engine in results) {
-            const category = results[engine].category;
-            const categoryClass =
-                category === "malicious"
-                    ? "malicious"
-                    : category === "suspicious"
-                    ? "suspicious"
-                    : "safe";
-            html += "<tr><td>" + engine + "</td><td class='" + categoryClass + "'>" + category + "</td></tr>";
-        }
-        html += "</table>";
+        html += `<table><tr><th>Engine</th><th>Result</th></tr>${Object.entries(results).map(([engine, result]) => {
+            const categoryClass = result.category === "malicious" ? "malicious" : result.category === "suspicious" ? "suspicious" : "safe";
+            return `<tr><td>${engine}</td><td class="${categoryClass}">${result.category}</td></tr>`;
+        }).join('')}</table>`;
     } else {
-        html += "<p>No detailed results available!</p>";
+        html += '<p>No detailed results available!</p>';
     }
-    modal.style.display = "block";
     getElement("FullReportContent").innerHTML = html;
-    modal.offsetHeight;
-    modal.classList.add("show");
+    modal.style.display = "block";
 }
 
-const closeModal = () => {
-    const modal = getElement("FullReportModel");
-    modal.classList.remove("show");
-    setTimeout(() => {
-        modal.style.display = "none";
-    }, 300);
-};
+const closeModal = () => getElement("FullReportModel").style.display = "none";
 
-// Your existing 'load' event listener
 window.addEventListener("load", () => {
-    // --- NEW: CALL THE VISITOR COUNTER FUNCTION ON PAGE LOAD ---
     updateVisitorCount();
-    // -----------------------------------------------------------
+    loadFeedbackList(); // Load feedback when the page loads
 
-    const modal = getElement("FullReportModel");
     window.addEventListener("click", (e) => {
-        if (e.target === modal) closeModal();
+        if (e.target === getElement("FullReportModel")) closeModal();
     });
 
-    const submitBtn = getElement("submitFeedback");
-    const feedbackInput = getElement("feedbackInput");
-    const feedbackMessage = getElement("feedbackMessage");
-
-    submitBtn.addEventListener("click", async () => {
+    getElement("submitFeedback").addEventListener("click", async () => {
+        const feedbackInput = getElement("feedbackInput");
+        const feedbackMessage = getElement("feedbackMessage");
         const feedback = feedbackInput.value.trim();
+
         if (!feedback) {
-            feedbackMessage.style.display = "block";
-            feedbackMessage.style.color = "var(--danger)";
             feedbackMessage.textContent = "Please enter your feedback before submitting.";
+            feedbackMessage.style.color = "var(--danger)";
+            feedbackMessage.style.display = "block";
             return;
         }
+
         try {
             const response = await fetch("https://safe-scan-vt.onrender.com/feedback", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ feedback }),
             });
-            if (!response.ok) {
-                throw new Error("Failed to submit feedback");
-            }
-            feedbackMessage.style.display = "block";
-            feedbackMessage.style.color = "var(--success)";
+            if (!response.ok) throw new Error("Failed to submit feedback");
+            
             feedbackMessage.textContent = "Thank you for your feedback!";
+            feedbackMessage.style.color = "var(--success)";
             feedbackInput.value = "";
-            loadFeedbackList();
+            loadFeedbackList(); // Reload the list to show the new feedback
         } catch (error) {
-            feedbackMessage.style.display = "block";
-            feedbackMessage.style.color = "var(--danger)";
             feedbackMessage.textContent = "Error submitting feedback. Please try again later.";
+            feedbackMessage.style.color = "var(--danger)";
+        } finally {
+            feedbackMessage.style.display = "block";
         }
     });
-
-    async function loadFeedbackList() {
-        const feedbackList = getElement("feedbackList");
-        try {
-            const response = await fetch("https://safe-scan-vt.onrender.com/feedback");
-            if (!response.ok) {
-                throw new Error("Failed to fetch feedback list");
-            }
-            const data = await response.json();
-            feedbackList.innerHTML = "";
-            if (data.feedbacks && data.feedbacks.length > 0) {
-                data.feedbacks.forEach((item) => {
-                    const li = document.createElement("li");
-                    li.textContent = item;
-                    feedbackList.appendChild(li);
-                });
-            } else {
-                feedbackList.innerHTML = "<li>No feedback available.</li>";
-            }
-        } catch (error) {
-            feedbackList.innerHTML = "<li>Error loading feedback list.</li>";
-        }
-    }
-
-    loadFeedbackList();
 });

@@ -1,3 +1,58 @@
+// ------------- RANDOM COLOR THEME FEATURE -------------
+const colorThemes = [
+    {
+        '--primary-color': '#0057b7',
+        '--primary-color-hover': '#003f7f',
+        '--success': '#2ecc40',
+        '--danger': '#ee3d3d',
+        '--background': '#e6f3ff',
+        '--surface': '#ffffff',
+        '--text': '#131b23',
+        '--text-secondary': '#335571'
+    },
+    {
+        '--primary-color': '#a259ff',
+        '--primary-color-hover': '#6b00b6',
+        '--success': '#00b894',
+        '--danger': '#e17055',
+        '--background': '#f5f0fa',
+        '--surface': '#fff0fb',
+        '--text': '#43305e',
+        '--text-secondary': '#729198'
+    },
+    {
+        '--primary-color': '#019267',
+        '--primary-color-hover': '#025940',
+        '--success': '#88e26f',
+        '--danger': '#ed6a5a',
+        '--background': '#e0f8f1',
+        '--surface': '#ffffff',
+        '--text': '#183a1d',
+        '--text-secondary': '#28875c'
+    },
+    {
+        '--primary-color': '#f7c873',
+        '--primary-color-hover': '#d9a441',
+        '--success': '#53ebbb',
+        '--danger': '#fa5252',
+        '--background': '#23272e',
+        '--surface': '#323846',
+        '--text': '#f0f6f5',
+        '--text-secondary': '#aaa'
+    }
+    // Add more if you wish!
+];
+
+function applyRandomTheme() {
+    const theme = colorThemes[Math.floor(Math.random() * colorThemes.length)];
+    for (const [k, v] of Object.entries(theme)) {
+        document.documentElement.style.setProperty(k, v);
+    }
+}
+// Apply it ASAP on DOMContentLoaded
+window.addEventListener('DOMContentLoaded', applyRandomTheme);
+// ---------------------------------------------------------
+
 const getElement = id => document.getElementById(id);
 
 function updateVisitorCount() {

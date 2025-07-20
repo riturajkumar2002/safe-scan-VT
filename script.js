@@ -1,4 +1,41 @@
+// This helper function already exists in your code
 const getElement = id => document.getElementById(id);
+
+// --- NEW VISITOR COUNTER FUNCTION ---
+// This function fetches the count from your serverless API
+function updateVisitorCount() {
+    // The endpoint for the serverless function. 
+    // This relative path '/api/counter' works when you deploy on Vercel/Netlify.
+    // If you host the API elsewhere, you'd use the full URL, e.g., 'https://your-api.com/api/counter'
+    const apiEndpoint = '/api/counter';
+
+    fetch(apiEndpoint)
+        .then(response => {
+            if (!response.ok) {
+                // Don't throw an error for the counter, just log it.
+                // This prevents it from breaking other parts of the site if the counter is down.
+                console.error('Visitor counter API response was not ok.');
+                return { count: 'N/A' }; // Return a default object
+            }
+            return response.json();
+        })
+        .then(data => {
+            const countElement = getElement('visitor-count');
+            if (countElement) {
+                countElement.textContent = data.count;
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching visitor count:', error);
+            const countElement = getElement('visitor-count');
+            if (countElement) {
+                // Display 'N/A' (Not Available) if the fetch fails
+                countElement.textContent = 'N/A';
+            }
+        });
+}
+// --- END NEW VISITOR COUNTER FUNCTION ---
+
 
 const updateResult = (content, display = true) => {
     const result = getElement('result');
@@ -45,7 +82,6 @@ async function scanURL() {
         }
 
         const result = await response.json();
-        // Wait a bit before polling
         await new Promise(resolve => setTimeout(resolve, 3000));
         showLoading("Getting scan results...");
         await pollAnalysisResults(result.data.id);
@@ -143,10 +179,10 @@ function showFormattedResult(data) {
     }
 
     const categories = {
-        'malicious': { color: 'malicious', label: 'Malicious' },
-        'suspicious': { color: 'suspicious', label: 'Suspicious' },
-        'harmless': { color: 'safe', label: 'Clean' },
-        'undetected': { color: 'undetected', label: 'Undetected' }
+        malicious: { color: "malicious", label: "Malicious" },
+        suspicious: { color: "suspicious", label: "Suspicious" },
+        harmless: { color: "safe", label: "Clean" },
+        undetected: { color: "undetected", label: "Undetected" },
     };
 
     const percents = {};
@@ -154,63 +190,115 @@ function showFormattedResult(data) {
         percents[key] = getPercent(stats[key] || 0);
     }
 
-    const verdict = stats.malicious > 0 ? "Malicious" : (stats.suspicious > 0 ? "Suspicious" : "Safe");
-    const verdictClass = stats.malicious > 0 ? "malicious" : (stats.suspicious > 0 ? "suspicious" : "safe");
+    const verdict =
+        stats.malicious > 0
+            ? "Malicious"
+            : stats.suspicious > 0
+            ? "Suspicious"
+            : "Safe";
+    const verdictClass =
+        stats.malicious > 0
+            ? "malicious"
+            : stats.suspicious > 0
+            ? "suspicious"
+            : "safe";
 
-    let html = '<h3>Scan Report</h3>' +
+    let html =
+        '<h3>Scan Report</h3>' +
         '<div class="scan-stats">' +
-        '<p><strong>Verdict: </strong> <span class="' + verdictClass + '">' + verdict + '</span></p>' +
+        '<p><strong>Verdict: </strong> <span class="' +
+        verdictClass +
+        '">' +
+        verdict +
+        "</span></p>" +
         '<div class="progress-section">' +
         '<div class="progress-label">' +
         '<span>Detection Results</span>' +
-        '<span class="progress-percent">' + percents.malicious + '% Detection Rate</span>' +
-        '</div>' +
+        '<span class="progress-percent">' +
+        percents.malicious +
+        '% Detection Rate</span>' +
+        "</div>" +
         '<div class="progress-stacked">';
 
     for (const key in categories) {
-        html += '<div class="progress-bar ' + categories[key].color + '" style="width: ' + percents[key] + '%" title="' + categories[key].label + ': ' + (stats[key] || 0) + ' (' + percents[key] + '%)"></div>';
+        html +=
+            '<div class="progress-bar ' +
+            categories[key].color +
+            '" style="width: ' +
+            percents[key] +
+            '%" title="' +
+            categories[key].label +
+            ": " +
+            (stats[key] || 0) +
+            " (" +
+            percents[key] +
+            '%)"></div>';
     }
 
-    html += '</div><div class="progress-legend">';
+    html += "</div><div class=\"progress-legend\">";
 
     for (const key in categories) {
-        html += '<div class="legend-item"><span class="legend-color ' + categories[key].color + '"></span><span>' + categories[key].label + ' (' + percents[key] + '%)</span></div>';
+        html +=
+            '<div class="legend-item"><span class="legend-color ' +
+            categories[key].color +
+            '"></span><span>' +
+            categories[key].label +
+            " (" +
+            percents[key] +
+            '%)</span></div>';
     }
 
-    html += '</div></div><div class="detection-details">';
+    html += "</div></div><div class=\"detection-details\">";
 
     for (const key in categories) {
-        html += '<div class="detail-item ' + categories[key].color + '"><span class="detail-label">' + categories[key].label + '</span><span class="detail-value">' + (stats[key] || 0) + '</span><span class="detail-percent">' + percents[key] + '%<span></div>';
+        html +=
+            '<div class="detail-item ' +
+            categories[key].color +
+            '"><span class="detail-label">' +
+            categories[key].label +
+            '</span><span class="detail-value">' +
+            (stats[key] || 0) +
+            '</span><span class="detail-percent">' +
+            percents[key] +
+            '%<span></div>';
     }
 
-    html += '</div></div><button onclick="showFullReport(this.getAttribute(\'data-report\'))" data-report=\'' + JSON.stringify(data) + '\'> View Full Report</button>';
+    html +=
+        '</div></div><button onclick="showFullReport(this.getAttribute(\'data-report\'))" data-report=\'' +
+        JSON.stringify(data) +
+        "'> View Full Report</button>";
 
     updateResult(html);
 
     setTimeout(() => {
-        const progressStacked = getElement('result').querySelector('.progress-stacked');
+        const progressStacked = getElement("result").querySelector(".progress-stacked");
         if (progressStacked) {
-            progressStacked.classList.add('animate');
+            progressStacked.classList.add("animate");
         }
     }, 1000);
 }
 
 function showFullReport(reportData) {
-    const data = typeof reportData === 'string' ? JSON.parse(reportData) : reportData;
-    const modal = getElement('FullReportModel');
+    const data = typeof reportData === "string" ? JSON.parse(reportData) : reportData;
+    const modal = getElement("FullReportModel");
     const results = data.data && data.data.attributes && data.data.attributes.results;
 
-    let html = '<h3>Full Report Details</h3>';
+    let html = "<h3>Full Report Details</h3>";
     if (results) {
-        html += '<table><tr><th>Engine</th><th>Result</th></tr>';
+        html += "<table><tr><th>Engine</th><th>Result</th></tr>";
         for (const engine in results) {
             const category = results[engine].category;
-            const categoryClass = category === "malicious" ? "malicious" : (category === "suspicious" ? "suspicious" : "safe");
-            html += '<tr><td>' + engine + '</td><td class="' + categoryClass + '">' + category + '</td></tr>';
+            const categoryClass =
+                category === "malicious"
+                    ? "malicious"
+                    : category === "suspicious"
+                    ? "suspicious"
+                    : "safe";
+            html += "<tr><td>" + engine + "</td><td class='" + categoryClass + "'>" + category + "</td></tr>";
         }
-        html += '</table>';
+        html += "</table>";
     } else {
-        html += '<p>No detailed results available!</p>';
+        html += "<p>No detailed results available!</p>";
     }
     modal.style.display = "block";
     getElement("FullReportContent").innerHTML = html;
@@ -224,89 +312,76 @@ const closeModal = () => {
     setTimeout(() => {
         modal.style.display = "none";
     }, 300);
-}
+};
 
-window.addEventListener('load', () => {
-    const modal = getElement('FullReportModel');
-    window.addEventListener('click', e => {
+// Your existing 'load' event listener
+window.addEventListener("load", () => {
+    // --- NEW: CALL THE VISITOR COUNTER FUNCTION ON PAGE LOAD ---
+    updateVisitorCount();
+    // -----------------------------------------------------------
+
+    const modal = getElement("FullReportModel");
+    window.addEventListener("click", (e) => {
         if (e.target === modal) closeModal();
     });
 
-    const submitBtn = getElement('submitFeedback');
-    const feedbackInput = getElement('feedbackInput');
-    const feedbackMessage = getElement('feedbackMessage');
+    const submitBtn = getElement("submitFeedback");
+    const feedbackInput = getElement("feedbackInput");
+    const feedbackMessage = getElement("feedbackMessage");
 
-    submitBtn.addEventListener('click', async () => {
+    submitBtn.addEventListener("click", async () => {
         const feedback = feedbackInput.value.trim();
         if (!feedback) {
-            feedbackMessage.style.display = 'block';
-            feedbackMessage.style.color = 'var(--danger)';
-            feedbackMessage.textContent = 'Please enter your feedback before submitting.';
+            feedbackMessage.style.display = "block";
+            feedbackMessage.style.color = "var(--danger)";
+            feedbackMessage.textContent = "Please enter your feedback before submitting.";
             return;
         }
         try {
-            const response = await fetch('https://safe-scan-vt.onrender.com/feedback', {
-                method: 'POST',
+            const response = await fetch("https://safe-scan-vt.onrender.com/feedback", {
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json'
+                    "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ feedback })
+                body: JSON.stringify({ feedback }),
             });
-   
             if (!response.ok) {
-                throw new Error('Failed to submit feedback');
+                throw new Error("Failed to submit feedback");
             }
-            feedbackMessage.style.display = 'block';
-            feedbackMessage.style.color = 'var(--success)';
-            feedbackMessage.textContent = 'Thank you for your feedback!';
-            feedbackInput.value = '';
+            feedbackMessage.style.display = "block";
+            feedbackMessage.style.color = "var(--success)";
+            feedbackMessage.textContent = "Thank you for your feedback!";
+            feedbackInput.value = "";
             loadFeedbackList();
         } catch (error) {
-            feedbackMessage.style.display = 'block';
-            feedbackMessage.style.color = 'var(--danger)';
-            feedbackMessage.textContent = 'Error submitting feedback. Please try again later.';
+            feedbackMessage.style.display = "block";
+            feedbackMessage.style.color = "var(--danger)";
+            feedbackMessage.textContent = "Error submitting feedback. Please try again later.";
         }
     });
 
     async function loadFeedbackList() {
-        const feedbackList = getElement('feedbackList');
+        const feedbackList = getElement("feedbackList");
         try {
-            const response = await fetch('https://safe-scan-vt.onrender.com/feedback');
+            const response = await fetch("https://safe-scan-vt.onrender.com/feedback");
             if (!response.ok) {
-                throw new Error('Failed to fetch feedback list');
+                throw new Error("Failed to fetch feedback list");
             }
             const data = await response.json();
-            feedbackList.innerHTML = '';
+            feedbackList.innerHTML = "";
             if (data.feedbacks && data.feedbacks.length > 0) {
-                data.feedbacks.forEach(item => {
-                    const li = document.createElement('li');
+                data.feedbacks.forEach((item) => {
+                    const li = document.createElement("li");
                     li.textContent = item;
                     feedbackList.appendChild(li);
                 });
             } else {
-                feedbackList.innerHTML = '<li>No feedback available.</li>';
+                feedbackList.innerHTML = "<li>No feedback available.</li>";
             }
         } catch (error) {
-            feedbackList.innerHTML = '<li>Error loading feedback list.</li>';
+            feedbackList.innerHTML = "<li>Error loading feedback list.</li>";
         }
     }
 
     loadFeedbackList();
-
-    // New function to fetch and display visit count
-    async function loadVisitCount() {
-        const visitCountSpan = getElement('visitCount');
-        try {
-            const response = await fetch('/visit-count');
-            if (!response.ok) {
-                throw new Error('Failed to fetch visit count');
-            }
-            const data = await response.json();
-            visitCountSpan.textContent = data.count;
-        } catch (error) {
-            visitCountSpan.textContent = 'Error';
-        }
-    }
-
-    loadVisitCount();
 });

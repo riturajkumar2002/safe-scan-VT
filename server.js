@@ -3,56 +3,67 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
+const multer = require('multer');
+const FormData = require('form-data');
 require('dotenv').config();
-const app = express();
-const PORT =  process.env.PORT || 3001;
 
-// Replace this with your real VirusTotal API key
-const VIRUSTOTAL_API_KEY = '482c8d34d486b60b7bd794f82b2cba7b523c532c2583b37732a5053f0a3d9513';
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Your actual VirusTotal API key (keep this secret, move to .env for production)
+const VIRUSTOTAL_API_KEY = '482c8d34d486b60b7bd794f82b2cba7b523c532c2583b37732a5053f0a3d9513'; // <-- replace with your real key!
 
 app.use(cors());
 app.use(express.json());
 
-// Serve static files from the root directory
+const FEEDBACK_FILE = path.join(__dirname, 'feedback.txt');
+
+// Serve static files
 app.use(express.static(__dirname));
 
-// === POST Feedback ===
+// === Feedback Endpoints ===
+
+// Save feedback
 app.post('/feedback', (req, res) => {
     const { feedback } = req.body;
-    if (!feedback) {
+    if (typeof feedback !== 'string' || feedback.trim().length === 0) {
         return res.status(400).json({ error: 'Feedback is required' });
     }
-    const feedbackEntry = `${new Date().toISOString()} - ${feedback}\n`;
-    const feedbackFile = path.join(__dirname, 'feedback.txt');
-    fs.appendFile(feedbackFile, feedbackEntry, err => {
+    const feedbackEntry = `${new Date().toISOString()} - ${feedback.replace(/\r?\n/g, ' ')}\n`;
+    fs.appendFile(FEEDBACK_FILE, feedbackEntry, err => {
         if (err) {
             console.error('Failed to save feedback:', err);
             return res.status(500).json({ error: 'Failed to save feedback' });
         }
-        console.log('Feedback saved:', feedback);
         res.json({ message: 'Feedback received' });
     });
 });
 
-// === GET Feedback ===
+// List feedback (just messages, not timestamps)
 app.get('/feedback', (req, res) => {
-    const feedbackFile = path.join(__dirname, 'feedback.txt');
-    fs.readFile(feedbackFile, 'utf8', (err, data) => {
+    fs.readFile(FEEDBACK_FILE, 'utf8', (err, data) => {
         if (err) {
+            if (err.code === 'ENOENT') {
+                return res.json({ feedbacks: [] }); // No feedback yet
+            }
             console.error('Failed to read feedback:', err);
             return res.status(500).json({ error: 'Failed to read feedback' });
         }
-        const feedbacks = data.trim().split('\n').filter(line => line.length > 0);
+        const lines = data.trim().split('\n').filter(Boolean);
+        const feedbacks = lines
+            .reverse()
+            .map(line => {
+                const idx = line.indexOf(' - ');
+                return idx !== -1 ? line.substring(idx + 3) : line;
+            });
         res.json({ feedbacks });
     });
 });
 
-// === POST URL to VirusTotal ===
+// === VirusTotal URL Scan Endpoint ===
 app.post('/scan-url', async (req, res) => {
     const { url } = req.body;
-    if (!url) {
-        return res.status(400).json({ error: 'URL is required' });
-    }
+    if (!url) return res.status(400).json({ error: 'URL is required' });
 
     try {
         const response = await axios.post(
@@ -65,32 +76,21 @@ app.post('/scan-url', async (req, res) => {
                 }
             }
         );
-
-        const scanData = response.data;
-        res.json(scanData);
+        res.json(response.data);
     } catch (error) {
         console.error('Error from VirusTotal API:', error.response?.data || error.message);
         res.status(500).json({ error: 'Failed to scan URL', details: error.response?.data || error.message });
     }
 });
 
-// === GET Analysis Results from VirusTotal ===
+// === Get Analysis By ID ===
 app.get('/analysis/:id', async (req, res) => {
     const analysisId = req.params.id;
-    if (!analysisId) {
-        return res.status(400).json({ error: 'Analysis ID is required' });
-    }
-
+    if (!analysisId) return res.status(400).json({ error: 'Analysis ID is required' });
     try {
-        const response = await axios.get(
-            `https://www.virustotal.com/api/v3/analyses/${analysisId}`,
-            {
-                headers: {
-                    'x-apikey': VIRUSTOTAL_API_KEY
-                }
-            }
-        );
-
+        const response = await axios.get(`https://www.virustotal.com/api/v3/analyses/${analysisId}`, {
+            headers: { 'x-apikey': VIRUSTOTAL_API_KEY }
+        });
         res.json(response.data);
     } catch (error) {
         console.error('Error fetching analysis results:', error.response?.data || error.message);
@@ -98,19 +98,12 @@ app.get('/analysis/:id', async (req, res) => {
     }
 });
 
-// === POST File to VirusTotal ===
-const multer = require('multer');
-const FormData = require('form-data');
+// === VirusTotal File Scan ===
 const upload = multer();
-
 app.post('/scan-file', upload.single('file'), async (req, res) => {
-    console.log('Received file upload request');
     if (!req.file) {
-        console.error('No file received in request');
         return res.status(400).json({ error: 'File is required' });
     }
-    console.log('File received:', req.file.originalname, req.file.mimetype, req.file.size);
-
     try {
         const formData = new FormData();
         formData.append('file', req.file.buffer, {
@@ -131,7 +124,6 @@ app.post('/scan-file', upload.single('file'), async (req, res) => {
                 maxBodyLength: Infinity
             }
         );
-
         res.json(response.data);
     } catch (error) {
         console.error('Error uploading file to VirusTotal:', error.response?.data || error.message);
@@ -139,13 +131,21 @@ app.post('/scan-file', upload.single('file'), async (req, res) => {
     }
 });
 
-// Error handling middleware
+// === Visitor Counter (simple example, in-memory, reset on restart) ===
+let visitorCount = 0;
+app.get('/api/counter', (req, res) => {
+    // Optionally use something persistent for production!
+    visitorCount++;
+    res.json({ count: visitorCount });
+});
+
+// Error handler
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
     res.status(500).json({ error: 'Internal Server Error', details: err.message });
 });
 
-// === Start Server ===
+// Start server
 app.listen(PORT, () => {
-    console.log(`Server running on https://safe-scan-vt.onrender.com/:${PORT}`);
+    console.log(`Server running at http://https://safe-scan-vt.onrender.com:${PORT}/`);
 });

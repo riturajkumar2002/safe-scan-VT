@@ -56,7 +56,7 @@ function generateSessionId(req) {
     return require('crypto').createHash('md5').update(sessionKey).digest('hex');
 }
 
-// ----- Feedback Endpoints -----
+// ----- Feedback Endpoints (Persistent - No Auto-Refresh) -----
 
 // Admin authentication middleware
 function isAdmin(req) {
@@ -231,20 +231,19 @@ app.post('/scan-file', upload.single('file'), async (req, res) => {
     }
 });
 
-// ----- Updated Visitor Counter -----
+// ----- Updated Visitor Counter (Persistent - No Reset) -----
 app.get('/api/counter', (req, res) => {
     try {
         const visitorData = loadVisitorCount();
         const sessionId = generateSessionId(req);
-        const now = Date.now();
         
-        // Check if this is a new visitor (session not seen in last 24 hours)
-        const lastVisit = visitorData.sessions[sessionId];
-        const isNewVisitor = !lastVisit || (now - lastVisit) > (24 * 60 * 60 * 1000); // 24 hours
+        // Check if this is a completely new visitor (never seen before)
+        // Each unique visitor is only counted once - count accumulates permanently
+        const isNewVisitor = !visitorData.sessions[sessionId];
         
         if (isNewVisitor) {
             visitorData.count++;
-            visitorData.sessions[sessionId] = now;
+            visitorData.sessions[sessionId] = Date.now();
             saveVisitorCount(visitorData);
         }
         

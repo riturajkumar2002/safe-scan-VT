@@ -70,15 +70,9 @@ function updateVisitorCount() {
             return response.json();
         })
         .then(data => {
-            const currentCount = parseInt(countElement.textContent) || 0;
-            const newCount = data.count;
-            
-            // Animate the count update if it changed
-            if (newCount !== currentCount && currentCount > 0) {
-                animateCountChange(currentCount, newCount, countElement);
-            } else {
-                countElement.textContent = newCount;
-            }
+            // Simply display the count without animation
+            // This ensures the count appears stable and doesn't seem to refresh
+            countElement.textContent = data.count;
         })
         .catch((error) => {
             console.error('Error updating visitor count:', error);
@@ -86,29 +80,7 @@ function updateVisitorCount() {
         });
 }
 
-function animateCountChange(from, to, element) {
-    const duration = 1000; // 1 second animation
-    const startTime = Date.now();
-    
-    function update() {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        
-        // Easing function for smooth animation
-        const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-        const currentCount = Math.floor(from + (to - from) * easeOutQuart);
-        
-        element.textContent = currentCount;
-        
-        if (progress < 1) {
-            requestAnimationFrame(update);
-        } else {
-            element.textContent = to;
-        }
-    }
-    
-    requestAnimationFrame(update);
-}
+// Animation function removed - no longer needed since visitor count doesn't refresh
 
 const updateResult = (content, display = true) => {
     const result = getElement('result');
@@ -282,8 +254,8 @@ const closeModal = () => {
 window.addEventListener("load", () => {
     updateVisitorCount();
     
-    // Update visitor count every 30 seconds to keep it fresh
-    setInterval(updateVisitorCount, 30000);
+    // Visitor count is now persistent and only updates when new visitors arrive
+    // No automatic refresh needed - count accumulates over time
 
     const modal = getElement("FullReportModel");
     window.addEventListener("click", (e) => {

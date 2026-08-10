@@ -5,6 +5,7 @@ A web-based application for scanning URLs and files using the [VirusTotal API](h
 <image-card alt="Safe-Scan-VT" src="https://via.placeholder.com/600x300.png?text=Safe-Scan-VT+Demo" ></image-card>
 
 ## Features
+
 - **URL Scanning**: Check if a URL is malicious, suspicious, or safe.
 - **File Scanning**: Upload files (up to 32MB) for malware analysis.
 - **Interactive UI**: Displays scan results with a progress bar, verdict, and detailed statistics.
@@ -16,62 +17,60 @@ A web-based application for scanning URLs and files using the [VirusTotal API](h
 - **Modern Styling**: Clean and intuitive interface with Tailwind-inspired CSS.
 
 ## Demo
-- [Live Demo](#) *(Coming soon!)*  
 
+- [Live Demo](#) _(Coming soon!)_
 
 ## Prerequisites
+
 - A [VirusTotal API key](https://www.virustotal.com/gui/join-us) (free tier available).
 - A modern web browser (e.g., Chrome, Firefox, Safari).
 - A local server (e.g., Live Server for VS Code) or hosting service (e.g., Netlify, Vercel).
 
 ## Installation
+
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/your-username/safe-scan-VT.git
+   git clone https://github.com/riturajkumar2002/safe-scan-VT.git
    cd safe-scan-VT
+   ```
 
 ## Set Up the API Key:
+
 - Obtain a VirusTotal API key from your VirusTotal account.
-- Open script.js and replace the API_KEY constant:
-- **const API_KEY** = "your-api-key-here";
+- For development, create a `.env` file in the project root (this repository includes `.env.example` as a template).
+- In production, store the API key using your hosting provider's secure environment variables.
 
-- **Security Note**: For production, store the API key in an environment variable or use a backend proxy to avoid exposing it in client-side code. Add .env to .gitignore to exclude sensitive files.
+## Run the Application
 
-## Run the Application:
+- Install dependencies:
+  ```bash
+  npm install
+  ```
+- Start the server:
+  ```bash
+  npm start
+  ```
 
-- Host the project on a local server (e.g., using VS Code’s Live Server extension).
-- Alternatively, deploy to a web server (see Deployment).
-- Open index.html in a browser to access the scanner.
+The application will be available at `http://localhost:3001` if using the default `PORT=3001`.
 
 ## Usage
 
-- **Scan a URL**:
-
-- Enter a URL (e.g., https://example.com) in the "Scan a URL" input field.
-- Click Scan URL to submit for analysis.
-- View results, including a verdict (Safe, Suspicious, or Malicious), detection statistics, and a progress bar.
-
-- **Scan a File**:
-
-- Select a file (max 32MB) using the "Scan a File" input.
-- Click Scan File to upload and analyze.
-- Results display similar to URL scans, with an option for a detailed report.
-
-- **View Full Report**:
-
-- Click View Full Report in the results to see a detailed breakdown of antivirus engine results in a modal.
+- **Scan a URL**: Enter a URL (e.g., https://example.com) in the "Scan a URL" input field and click "Scan URL".
+- **Scan a File**: Select a file (max 32MB) and click "Scan File" to upload and analyze.
+- **View Full Report**: Click "View Full Report" to see detailed engine results.
 
 ## Project Structure
 
 safe-scan-VT/
-├── index.html           # Main HTML file with the UI
-├── style.css            # CSS styles for the application
-├── script.js            # JavaScript for API calls and UI logic
-├── server.js            # Node.js backend server with API endpoints
-├── package.json         # Node.js dependencies and scripts
-├── ADMIN_README.md      # Admin feature documentation
-├── LICENSE              # MIT License file
-└── README.md            # Project documentation
+
+- index.html # Main HTML file with the UI
+- style.css # CSS styles for the application
+- script.js # JavaScript for API calls and UI logic
+- server.js # Node.js backend server with API endpoints
+- package.json # Node.js dependencies and scripts
+- ADMIN_README.md # Admin feature documentation
+- LICENSE # MIT License file
+- README.md # Project documentation
 
 ## Technologies Used
 
@@ -81,41 +80,30 @@ safe-scan-VT/
 - **Styling**: Tailwind-inspired design with Google Fonts (Inter)
 - **Storage**: File-based storage for feedback and visitor data
 
-  ## Security Considerations
-  
-- **API Key Safety**: Never commit your VirusTotal API key to a public repository. Use a backend proxy or environment variables to secure it. Ensure .env is listed in .gitignore.
+## Security Considerations
+
+- **API Key Safety**: Never commit your VirusTotal API key to a public repository. Use a backend proxy or environment variables to secure it. Ensure `.env` is listed in `.gitignore`.
 - **File Size Limit**: Enforces a 32MB limit for file uploads, per VirusTotal’s free API restrictions.
 - **Rate Limits**: The free VirusTotal API has limits (e.g., 4 requests/minute). Consider a paid plan for higher quotas.
-- **Sensitive Data**: If your repository was public with a hardcoded API key, revoke the key on VirusTotal and remove it from the commit history using GitHub’s guide.
 
 ## Installation & Setup
 
-1. **Clone the Repository**:
-   ```bash
-   git clone https://github.com/riturajkumar2002/safe-scan-VT.git
-   cd safe-scan-VT
-   ```
-
-2. **Install Dependencies**:
+1. Clone the repository (see Installation above).
+2. Install dependencies:
    ```bash
    npm install
    ```
-
-3. **Set Up Environment Variables**:
-   Create a `.env` file in the root directory:
+3. Create a `.env` file (use `.env.example` as a template):
    ```env
    VIRUSTOTAL_API_KEY=your_virustotal_api_key_here
    ADMIN_TOKEN=your_secure_admin_token
    ADMIN_PASSWORD=your_secure_admin_password
    PORT=3001
    ```
-
-4. **Run the Application**:
+4. Start the application:
    ```bash
    npm start
    ```
-   
-   The application will be available at `http://localhost:3001`
 
 ## Deployment
 
@@ -129,36 +117,46 @@ safe-scan-VT/
   - Use `npm start` to run the Node.js server
   - Access the application at `http://localhost:3001`
 
-- **Note**: This application requires a Node.js backend server to function properly due to CORS restrictions and API key security.
+### Vercel Deployment
+
+- Use Vercel’s Project Settings to add environment variables securely: go to your project → Settings → Environment Variables and add `VIRUSTOTAL_API_KEY` with the value from your VirusTotal account. Choose the appropriate environment (Production/Preview/Development).
+- Alternatively, use the Vercel CLI to add a variable (you will be prompted to paste the secret):
+
+```bash
+npm i -g vercel
+vercel login
+vercel env add VIRUSTOTAL_API_KEY production
+```
+
+- Do NOT commit your real API key to the repository. This repo includes `.env.example` as a template; create a local `.env` (ignored by Git) for development only.
 
 ## Admin Features
 
-This application includes an admin panel for managing user feedback:
+This application includes an admin panel for managing user feedback.
 
 ### Admin Access
-- **Default Credentials**: 
+
+- **Default Credentials**:
   - Token: `admin123`
   - Password: `adminpass123`
 - **How to Access**: Click the "🔐 Admin Login" button in the feedback section
 - **Features**: Delete feedback messages, view timestamps, manage user submissions
 
 ### Security
+
 - Admin authentication is required for all admin operations
 - Credentials can be customized via environment variables
-- All admin functions are properly secured on both frontend and backend
+- All admin functions are secured on both frontend and backend
 
 For detailed admin documentation, see [ADMIN_README.md](./ADMIN_README.md).
 
 ## Contributing
 
-- **Contributions are welcome! To contribute**:
-
 - Fork the repository.
-- Create a branch: git checkout -b feature/your-feature.
-- Commit changes: git commit -m "Add your feature".
-- Push to the branch: git push origin feature/your-feature.
+- Create a branch: `git checkout -b feature/your-feature`.
+- Commit changes: `git commit -m "Add your feature"`.
+- Push to the branch: `git push origin feature/your-feature`.
 - Open a pull request.
-- Please ensure code follows the project’s style and includes tests where applicable.
 
 License
 
@@ -168,7 +166,6 @@ This project is licensed under the MIT License.
 
 - VirusTotal for providing the API.
 - Google Fonts for the Inter font family.
-- Inspired by modern web design and security tools.
 
 ## Contact
 
